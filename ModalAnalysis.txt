@@ -1,0 +1,238 @@
+Finish
+/clear
+/TITLE, RailWheel
+/CWD,'D:\SkyBoard'
+/UNITS,MPA                   ! Units are in M, Pa, and Newtons
+/PREP7
+/RGB,INDEX,100,100,100,0
+/RGB,INDEX,0,0,0,15
+/title,  SKI_Model-  K.Bendine last Update 06-05-2024
+ 
+THG=0.75e-3
+THC=4e-3
+Thsteel=2e-3
+ThAbs=4e-3
+!!*****
+Esteel=200e9
+Nusteel=0.28
+Rhosteel=7900
+EAbs=1.7e9
+NuABS=0.49
+RhoAbs=1050
+EWood=10e9
+NuWood=0.26
+RhoWood=500
+!!******************************************************
+
+
+
+
+!!******************************************************
+! Material property of steel Edge 
+MP,EX,1,Esteel         ! Young's modulus of wheel
+MP,NUXY,1,Nusteel
+MP,DENS,1,Rhosteel     ! Density 
+
+! Material property of ABS wall
+MP,EX,2,EAbs           ! Young's modulus 
+MP,NUXY,2,NuABS
+MP,DENS,2,RhoAbs       ! Density 
+
+! Material property of wooden core
+MP,EX,3,EWood          ! Young's modulus 
+MP,NUXY,3,NuWood
+MP,DENS,3,RhoWood      ! Density 
+
+! Material property of composite laminate
+MP,Ex,4,40e9              
+MP,Ey,4,9e9      
+MP,Ez,4,9e9      
+MP,Gxy,4,6.7e9              
+MP,Gxz,4,6.7e9             
+MP,Gyz,4,2.5e9     
+MP,prxy,4,0.26            
+MP,prxz,4,0.26             
+MP,pryz,4,0.26             
+MP,Dens,4,2160
+
+! Material property of snow
+MP,EX,5,1e6         ! Young's modulus 
+MP,NUXY,5,0.3
+MP,DENS,5,RhoWood      ! Density 
+
+! Material properties
+ET,1,SHELL281 ! Choose SHELL281 element for analysis
+SECTYPE,1,SHELL ! Section shell set #1, [0/45/-45/90]s
+SECOFFSET,TOP          ! Nodes on the laminate middle thickness
+KEYOPT,1,8,1                ! Set KEYOPT(8)=1, Store data for all layers
+SECDATA,ThG,4,0.0,3     ! 1st layer: mat. #GRFP, 0 deg, Thickness=ThG m
+SECDATA,ThG,4,0,3       ! 2nd layer: mat. #GRFP, 0 deg, Thickness=ThG m
+SECDATA,ThC,3,0,3       ! 3rd layer: mat. #Wood, 0 deg, Thickness=0.00015 m
+SECDATA,ThG,4,0,3       ! 4th layer: mat. #GRFP, 0 deg, Thickness=ThG m
+SECDATA,ThG,4,0,3       ! 5th layer: mat. #GRFP, 0 deg, Thickness=ThG m
+! Material properties
+ET,2,SHELL281         ! Choose SHELL281 element for analysis
+SECTYPE,2,SHELL       ! Section shell set #1, [0/45/-45/90]s
+SECOFFSET,TOP          ! Nodes on the laminate middle thickness
+KEYOPT,2,8,1                ! Set KEYOPT(8)=1, Store data for all layers
+SECDATA,Thsteel,1,0.0,3     ! 1st layer: mat. #Steel, 0 deg, Thickness=Thsteel m
+SECDATA,ThAbs,2,0,3         ! 2nd layer: mat. #ABS,   0 deg, Thickness=ThAbs m
+
+
+!!******************************************************
+!***************** Geometry
+!!! Import Gemetrical data
+/INQUIRE,NmPoint,LINES,'testX.txt'               ! Read no. of lines = no. of time steps
+*DIM,VarTableX,table,NmPoint,1,0,,,              ! creat an array
+*TREAD,VarTableX,'testX','txt',' ',,             ! Read file data to table
+*DEL,KdataX,,NOPR
+*DIM,KdataX,ARRAY,NmPoint,1
+*DO,i,1,NmPoint                                  ! copy column by column
+    *vfun,KdataX(i,1),copy,VarTableX(i,0)        ! Shift column to right
+*Enddo
+
+/INQUIRE,NmPoint,LINES,'testYTop.txt'      
+*DIM,VarTableY,table,NmPoint,1,0,,,
+*TREAD,VarTableY,'testYTop','txt',' ',,     
+*DEL,KdataY,,NOPR
+*DIM,KdataY,ARRAY,NmPoint,1
+*DO,i,1,NmPoint 
+    *vfun,KdataY(i,1),copy,VarTableY(i,0)        
+*Enddo
+
+/INQUIRE,NmPoint,LINES,'testZ.txt'      
+*DIM,VarTableZ,table,NmPoint,1,0,,,
+*TREAD,VarTableZ,'testZ','txt',' ',,     
+*DEL,KdataZ,,NOPR
+*DIM,KdataZ,ARRAY,NmPoint,1
+*DO,i,1,NmPoint 
+    *vfun,KdataZ(i,1),copy,VarTableZ(i,0)        
+*Enddo
+
+
+!! Creat Keypoint ski profile
+*Do,iter,1,NmPoint,1
+    K, iter,KdataX(iter,1) , 0 , KdataZ(iter,1)
+*Enddo
+
+!! Kezpoint with offset in B direction
+F=3+iter
+it=0
+*Do,itr,F,F+NmPoint-2,1
+it=it+1
+    K, itr,KdataX(it,1) , KdataY(it,1) , KdataZ(it,1)
+*Enddo
+Nummrg,kp
+
+!! Kezpoint with offset in B direction
+
+K, itr+1,KdataX(1,1)+Thsteel , KdataY(1,1)  , KdataZ(1,1)
+K, itr+2,KdataX(2,1)+Thsteel , KdataY(2,1)  , KdataZ(2,1)
+K, itr+3,KdataX(3,1)+Thsteel , KdataY(3,1) , KdataZ(3,1)
+K, itr+4,KdataX(4,1)+Thsteel , KdataY(4,1) , KdataZ(4,1)
+
+K, itr+5,KdataX(20,1)-Thsteel , 0  , KdataZ(20,1)
+K, itr+6,KdataX(20,1)-Thsteel , KdataY(20,1)  , KdataZ(20,1)
+K, itr+7,KdataX(19,1)-Thsteel , KdataY(19,1) , KdataZ(19,1)
+K, itr+8,KdataX(18,1)-Thsteel , KdataY(18,1) , KdataZ(18,1)
+
+F=9+itr
+it=18-1
+*Do,itr,F,F+13,1
+
+    K, itr,KdataX(it,1) , KdataY(it,1)-Thsteel , KdataZ(it,1)
+it=it-1
+*Enddo
+Nummrg,kp
+
+L,1,82
+L,82,2
+*Do,iter,2,18,1
+    L,iter,iter+1
+*Enddo
+L,19,86
+L,86,20
+
+*Do,iter,44,61,1
+    L,iter,iter+1
+*Enddo
+L,62,20
+L,44,1
+
+*Do,iter,86,102,1
+    L,iter,iter+1
+*Enddo
+L,103,84
+
+*Do,iter,82,83,1
+    L,iter,iter+1
+*Enddo
+
+i=0
+*Do,iter,87,103,1
+i=i+1
+    L,86+i,63-i
+*Enddo
+L,44,83
+L,45,84
+
+
+*Do,i,1,15,1
+   AL,61+i,40-i,62+i,42+i
+*enddo
+AL,58,77,24,78
+AL,21,40,62,42
+AL,1,60,79,41
+AL,79,61,80,22
+AL,80,59,78,23
+
+
+*do,i,1,15,1
+A,20-i,87+i,88+i,19-i
+*enddo
+A,19,86,87,88
+A,4,103,84,3
+A,3,84,83,2
+A,82,2,83
+allsel,all
+ARSYM,Y,all, , , ,0,0  
+
+Asel,s,area,,1,20
+Asel,A,area,,40,59
+CM,SteelArea,Area
+allsel,all
+Cmsel,u,SteelArea,Area
+CM,midleArea,Area
+!Aglue,all
+
+Cmsel,s,SteelArea,area
+SECNUM,2
+type,2
+ESIZE,0.008
+Amesh,all
+
+Cmsel,s,midleArea,Area
+SECNUM,1
+type,1
+ESIZE,0.0080
+Amesh,all
+Nummrg,all
+
+eplot
+Allsel,all
+FINISH                 ! Exit pre-processor module
+/SOLU                  ! Solution module
+ANTYPE,2               ! Modal analysis
+MODOPT,LANB,12,0,2000
+MXPAND,12
+! Block Lanczos, 5 modes, 0 to 2000 Hz
+nsel,s,loc,x,-5e-3,5e-3                  ! Clamp left end of bimorph
+d,all,ux,0,,,,uy,uz		! Defines DOF constraints, clamp the end 
+allsel,all
+solve
+/FINISH ! Exit solution module
+/POST1 ! Post-processor module
+SET,LIST ! List solutions
+SET,1,2 ! Set mode number 2 shape
+PLDISP,1 ! Display the mode 2 shape displacements
+FINISH ! Exit post-processor module
