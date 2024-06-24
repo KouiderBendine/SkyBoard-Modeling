@@ -1,0 +1,996 @@
+Finish
+
+/clear
+
+/TITLE, SkyBoard
+
+/CWD,'C:\Users\bendine\OneDrive - Luxembourg Institute of Science and Technology\Ski_Litterature\AnsysModel\Contact_Ansys'
+
+/UNITS,MPA     ! Units are in M, Pa, and Newtons
+
+/PREP7
+
+/RGB,INDEX,100,100,100,0
+/RGB,INDEX,0,0,0,15
+
+/title,  SKI_Model-  K.Bendine last Update 18-06-2024
+
+*ASK, AnalysisType,  0 for static or 1 for dynamic, 0
+!AnalysisType = 0    !0: Static
+                    !1:Dynamic
+SnowTh=0.005 
+THG=1e-3
+THC=4e-3
+Hsteel=2e-3
+ThAbs=4e-3
+!!*****
+Esteel=200e9
+Nusteel=0.28
+Rhosteel=7900
+EAbs=1.7e9
+NuABS=0.49
+RhoAbs=1050
+EWood=10e9
+NuWood=0.26
+RhoWood=500
+
+!!******************************************************
+! Material property of steel Edge 
+MP,EX,1,Esteel         ! Young's modulus of wheel
+MP,NUXY,1,Nusteel
+MP,DENS,1,Rhosteel     ! Density 
+
+! Material property of ABS wall
+MP,EX,2,EAbs           ! Young's modulus 
+MP,NUXY,2,NuABS
+MP,DENS,2,RhoAbs       ! Density 
+
+! Material property of wooden core
+MP,EX,3,EWood          ! Young's modulus 
+MP,NUXY,3,NuWood
+MP,DENS,3,RhoWood      ! Density 
+
+! Material property of composite laminate
+MP,Ex,4,30e9              
+MP,Ey,4,9e9      
+MP,Ez,4,9e9      
+MP,Gxy,4,6.7e9              
+MP,Gxz,4,6.7e9             
+MP,Gyz,4,2.5e9     
+MP,prxy,4,0.26            
+MP,prxz,4,0.26             
+MP,pryz,4,0.26             
+MP,Dens,4,2160
+
+! Material property of snow
+MP,EX,5,10e6         ! Young's modulus 
+MP,NUXY,5,0.3
+MP,DENS,5,RhoWood      ! Density 
+
+! Material properties
+ET,1,SHELL281 ! Choose SHELL281 element for analysis
+SECTYPE,1,SHELL ! Section shell set #1, [0/45/-45/90]s
+SECOFFSET,MID          ! Nodes on the laminate middle thickness
+KEYOPT,1,8,1                ! Set KEYOPT(8)=1, Store data for all layers
+SECDATA,ThG,4,0.0,3     ! 1st layer: mat. #GRFP, 0 deg, Thickness=ThG m
+SECDATA,ThG,4,0,3       ! 2nd layer: mat. #GRFP, 0 deg, Thickness=ThG m
+SECDATA,ThC,3,0,3       ! 3rd layer: mat. #Wood, 0 deg, Thickness=0.00015 m
+SECDATA,ThG,4,0,3       ! 4th layer: mat. #GRFP, 0 deg, Thickness=ThG m
+SECDATA,ThG,4,0,3       ! 5th layer: mat. #GRFP, 0 deg, Thickness=ThG m
+! Material properties
+ET,2,SHELL281         ! Choose SHELL281 element for analysis
+SECTYPE,2,SHELL       ! Section shell set #1, [0/45/-45/90]s
+SECOFFSET,TOP          ! Nodes on the laminate middle thickness
+KEYOPT,2,8,1                ! Set KEYOPT(8)=1, Store data for all layers
+SECDATA,Thsteel,1,0.0,3     ! 1st layer: mat. #Steel, 0 deg, Thickness=Thsteel m
+SECDATA,ThAbs,2,0,3         ! 2nd layer: mat. #ABS,   0 deg, Thickness=ThAbs m
+
+!***************** Geometry
+!!! Import Gemetrical data
+/INQUIRE,NmPoint,LINES,'testX.txt'               ! Read no. of lines = no. of time steps
+*DIM,VarTableX,table,NmPoint,1,0,,,              ! creat an array
+*TREAD,VarTableX,'testX','txt',' ',,             ! Read file data to table
+*DEL,KdataX,,NOPR
+*DIM,KdataX,ARRAY,NmPoint,1
+*DO,i,1,NmPoint                                  ! copy column by column
+    *vfun,KdataX(i,1),copy,VarTableX(i,0)        ! Shift column to right
+*Enddo
+
+/INQUIRE,NmPoint,LINES,'testYTop.txt'      
+*DIM,VarTableY,table,NmPoint,1,0,,,
+*TREAD,VarTableY,'testYTop','txt',' ',,     
+*DEL,KdataY,,NOPR
+*DIM,KdataY,ARRAY,NmPoint,1
+*DO,i,1,NmPoint 
+    *vfun,KdataY(i,1),copy,VarTableY(i,0)        
+*Enddo
+
+/INQUIRE,NmPoint,LINES,'testZ.txt'      
+*DIM,VarTableZ,table,NmPoint,1,0,,,
+*TREAD,VarTableZ,'testZ','txt',' ',,     
+*DEL,KdataZ,,NOPR
+*DIM,KdataZ,ARRAY,NmPoint,1
+*DO,i,1,NmPoint 
+    *vfun,KdataZ(i,1),copy,VarTableZ(i,0)        
+*Enddo
+
+
+!! Creat Keypoint ski profile
+*Do,iter,1,NmPoint,1
+    K, iter,KdataX(iter,1) , 0 , KdataZ(iter,1)
+*Enddo
+
+!! Kezpoint with offset in B direction
+F=3+iter
+it=0
+*Do,itr,F,F+NmPoint-2,1
+it=it+1
+    K, itr,KdataX(it,1) , KdataY(it,1) , KdataZ(it,1)
+*Enddo
+Nummrg,kp
+
+!! Kezpoint with offset in B direction
+
+K, itr+1,KdataX(1,1)+Hsteel , KdataY(1,1)  , KdataZ(1,1)
+K, itr+2,KdataX(2,1)+Hsteel , KdataY(2,1)  , KdataZ(2,1)
+K, itr+3,KdataX(3,1)+Hsteel , KdataY(3,1) , KdataZ(3,1)
+K, itr+4,KdataX(4,1)+Hsteel , KdataY(4,1) , KdataZ(4,1)
+
+K, itr+5,KdataX(20,1)-Hsteel , 0  , KdataZ(20,1)
+K, itr+6,KdataX(20,1)-Hsteel , KdataY(20,1)  , KdataZ(20,1)
+K, itr+7,KdataX(19,1)-Hsteel , KdataY(19,1) , KdataZ(19,1)
+K, itr+8,KdataX(18,1)-Hsteel , KdataY(18,1) , KdataZ(18,1)
+
+F=9+itr
+it=18-1
+*Do,itr,F,F+13,1
+
+    K, itr,KdataX(it,1) , KdataY(it,1)-Hsteel , KdataZ(it,1)
+it=it-1
+*Enddo
+Nummrg,kp
+
+L,1,82
+L,82,2
+*Do,iter,2,18,1
+    L,iter,iter+1
+*Enddo
+L,19,86
+L,86,20
+
+*Do,iter,44,61,1
+    L,iter,iter+1
+*Enddo
+L,62,20
+L,44,1
+
+*Do,iter,86,102,1
+    L,iter,iter+1
+*Enddo
+L,103,84
+
+*Do,iter,82,83,1
+    L,iter,iter+1
+*Enddo
+
+i=0
+*Do,iter,87,103,1
+i=i+1
+    L,86+i,63-i
+*Enddo
+L,44,83
+L,45,84
+
+
+*Do,i,1,15,1
+   AL,61+i,40-i,62+i,42+i
+*enddo
+AL,58,77,24,78
+AL,21,40,62,42
+AL,1,60,79,41
+AL,79,61,80,22
+AL,80,59,78,23
+
+
+*do,i,1,15,1
+A,20-i,87+i,88+i,19-i
+*enddo
+A,19,86,87,88
+A,4,103,84,3
+A,3,84,83,2
+A,82,2,83
+allsel,all
+ARSYM,Y,all, , , ,0,0  
+
+Asel,s,area,,1,20
+Asel,A,area,,40,59
+CM,SteelArea,Area
+allsel,all
+Cmsel,u,SteelArea,Area
+CM,midleArea,Area
+!Aglue,all
+
+Lsel,s,line,,114,141,3
+Lsel,a,line,,112,139,3
+Lsel,a,line,,47,56,1
+Lsel,a,line,,26,35,1
+LESIZE, all, , , 5
+
+Cmsel,s,SteelArea,area
+SECNUM,2
+type,2
+ESIZE,0.012
+Amesh,all
+
+Cmsel,s,midleArea,Area
+SECNUM,1
+type,1
+ESIZE,0.012
+Amesh,all
+nummrg,all
+ET,20,SOLID185       ! 3-D Blade element
+block,KdataX(6,1),KdataX(16,1),-0.2,0.2,1e-5,-SnowTh
+block,KdataX(16,1),1.5*KdataX(16,1),-0.2,0.2,1e-5,-SnowTh
+block,KdataX(6,1),1.5*KdataX(6,1),-0.2,0.2,1e-5,-SnowTh
+vglue,all
+type,20
+mat,5
+vmesh,all
+
+esel,s,type,,1
+!ESURF,,REVERSE  
+ENSYM,0,,0,ALL
+
+esel,s,type,,20
+ESURF,,REVERSE  
+
+allsel,all
+
+!!************************************************* 
+!Define the contact region parameters   
+CM,_NODECM,NODE 
+CM,_ELEMCM,ELEM 
+CM,_KPCM,KP 
+CM,_LINECM,LINE 
+CM,_AREACM,AREA 
+CM,_VOLUCM,VOLU 
+/GSAV,cwz,gsav,,temp
+MP,MU,20,0.2 
+MAT,20   
+MP,EMIS,20,7.88860905221e-31 
+R,3 
+REAL,3  
+ET,2,170
+ET,3,174
+R,3,,,1.0,0.1,0,
+RMORE,0.0,0,1.0,,1.0,0.5
+RMORE,0,1.0,1.0,0.0,,1.0
+RMORE,,,,,,1.0  
+KEYOPT,3,4,0
+KEYOPT,3,5,3
+KEYOPT,3,7,0
+KEYOPT,3,8,0
+KEYOPT,3,9,0
+KEYOPT,3,10,0   
+KEYOPT,3,11,0   
+KEYOPT,3,12,0   
+KEYOPT,3,14,0   
+KEYOPT,3,18,0   
+KEYOPT,3,2,0
+KEYOPT,2,5,0
+! Generate the target surface   
+asel,s,area,,98
+asel,a,area,,80
+asel,a,area,,102
+
+CM,_TARGET,AREA 
+TYPE,2  
+NSLA,S,1
+ESLN,S,0
+ESLL,U  
+ESEL,U,ENAME,,188,189   
+NSLE,A,CT2  
+ESURF   
+CMSEL,S,_ELEMCM 
+! Generate the contact surface 
+
+ASEL,S,,,39 
+ASEL,A,,,78 
+ASEL,A,,,38 
+ASEL,A,,,77 
+ASEL,A,,,37 
+ASEL,A,,,76 
+ASEL,A,,,35 
+ASEL,A,,,74 
+ASEL,A,,,34 
+ASEL,A,,,73 
+ASEL,A,,,33 
+ASEL,A,,,72 
+ASEL,A,,,32 
+ASEL,A,,,71 
+ASEL,A,,,31 
+ASEL,A,,,70 
+ASEL,A,,,30 
+ASEL,A,,,69 
+ASEL,A,,,29 
+ASEL,A,,,68 
+ASEL,A,,,28 
+ASEL,A,,,67 
+ASEL,A,,,27 
+ASEL,A,,,66 
+ASEL,A,,,26 
+ASEL,A,,,65 
+ASEL,A,,,25 
+ASEL,A,,,64 
+ASEL,A,,,24 
+ASEL,A,,,63 
+ASEL,A,,,23 
+ASEL,A,,,62 
+ASEL,A,,,22 
+ASEL,A,,,61 
+ASEL,A,,,21 
+ASEL,A,,,60 
+ASEL,A,,,36 
+ASEL,A,,,75 
+CM,_CONTACT,AREA
+TYPE,3  
+NSLA,S,1
+ESLN,S,0
+NSLE,A,CT2 ! CZMESH patch (fsk qt-40109 8/2008) 
+ESURF   
+!* Create Companion Pair - Start
+R,4 
+REAL,4  
+ET,4,170
+ET,5,174
+R,4,,,1.0,0.1,0,
+RMORE,0.0,0,1.0,,1.0,0.5
+RMORE,0,1.0,1.0,0.0,,1.0
+RMORE,,,,,,1.0  
+KEYOPT,5,4,0
+KEYOPT,5,5,3
+KEYOPT,5,7,0
+KEYOPT,5,8,0
+KEYOPT,5,9,0
+KEYOPT,5,10,0   
+KEYOPT,5,11,0   
+KEYOPT,5,12,0   
+KEYOPT,5,14,0   
+KEYOPT,5,18,0   
+KEYOPT,5,2,0
+KEYOPT,5,1,0
+KEYOPT,4,1,0
+KEYOPT,4,3,0
+KEYOPT,4,5,0
+TYPE,4  
+ESEL,S,TYPE,,3  
+NSLE,S  
+ESLN,S,0
+ESURF   
+TYPE,5  
+ESEL,S,TYPE,,2  
+NSLE,S  
+ESLN,S,0
+ESURF   
+!* Create Companion Pair - End  
+ALLSEL  
+ESEL,ALL
+ESEL,S,TYPE,,2  
+ESEL,A,TYPE,,3  
+ESEL,R,REAL,,3  
+/PSYMB,ESYS,1   
+/PNUM,TYPE,1
+/NUM,1  
+EPLOT   
+ESEL,ALL
+ESEL,S,TYPE,,2  
+ESEL,A,TYPE,,3  
+ESEL,R,REAL,,3  
+ESEL,A,TYPE,,4  
+ESEL,A,TYPE,,5  
+CMSEL,A,_NODECM 
+CMDEL,_NODECM   
+CMSEL,A,_ELEMCM 
+CMDEL,_ELEMCM   
+CMSEL,S,_KPCM   
+CMDEL,_KPCM 
+CMSEL,S,_LINECM 
+CMDEL,_LINECM   
+CMSEL,S,_AREACM 
+CMDEL,_AREACM   
+CMSEL,S,_VOLUCM 
+CMDEL,_VOLUCM   
+/GRES,cwz,gsav  
+CMDEL,_TARGET   
+CMDEL,_CONTACT  
+/MREP,EPLOT 
+allsel,all  
+eplot   
+!*  
+CM,_CWZ_EL,ELEM 
+CM,_CWZ_ND,NODE 
+CM,_CWZ_KP,KP   
+CM,_CWZ_LN,LINE 
+CM,_CWZ_AR,AREA 
+CM,_CWZ_VL,VOLU 
+ESEL,NONE   
+ESEL,A,REAL,,3  
+ESEL,R,ENAME,,169,177   
+NSLE
+KSLN,S  
+LSLK,S,1
+ASLL,S,1
+CM,_CWZ_EL_UE,ELEM  
+NSLE
+ESLN
+ESEL,U,ENAME,,169,177   
+CMSEL,A,_CWZ_EL_UE  
+CNCHECK 
+CMDEL,_CWZ_EL_UE
+CMSEL,S,_CWZ_EL 
+CMDEL,_CWZ_EL   
+CMSEL,S,_CWZ_ND 
+CMDEL,_CWZ_ND   
+CMSEL,S,_CWZ_KP 
+CMDEL,_CWZ_KP   
+CMSEL,S,_CWZ_LN 
+CMDEL,_CWZ_LN   
+CMSEL,S,_CWZ_AR 
+CMDEL,_CWZ_AR   
+CMSEL,S,_CWZ_VL 
+CMDEL,_CWZ_VL   
+!*  
+*CREATE,cwzplot,mac 
+~eui,'::apdl::noprint 1'
+~eui,'::apdl::nooutput 1'   
+!*  
+CM,_CWZ_EL,ELEM 
+CM,_CWZ_ND,NODE 
+CM,_CWZ_KP,KP   
+CM,_CWZ_LN,LINE 
+CM,_CWZ_AR,AREA 
+CM,_CWZ_VL,VOLU 
+ESEL,NONE   
+ESEL,A,REAL,,3  
+ESEL,R,ENAME,,169,177   
+NSLE
+KSLN,S  
+LSLK,S,1
+ASLL,S,1
+/PNUM,TYPE,1
+/NUM,1  
+/PSYMB,ESYS,1   
+EPLOT   
+CMSEL,S,_CWZ_EL 
+CMDEL,_CWZ_EL   
+CMSEL,S,_CWZ_ND 
+CMDEL,_CWZ_ND   
+CMSEL,S,_CWZ_KP 
+CMDEL,_CWZ_KP   
+CMSEL,S,_CWZ_LN 
+CMDEL,_CWZ_LN   
+CMSEL,S,_CWZ_AR 
+CMDEL,_CWZ_AR   
+CMSEL,S,_CWZ_VL 
+CMDEL,_CWZ_VL   
+!*  
+/PSYMB,ESYS,0   
+/NUM,0  
+/PNUM,TYPE,0
+/PNUM,REAL,0
+/mrep,cwzplot   
+~eui,'::apdl::nooutput 0'   
+~eui,'::apdl::noprint 0'
+*END
+cwzplot   
+CM,_CWZ_EL,ELEM 
+CM,_CWZ_ND,NODE 
+CM,_CWZ_KP,KP   
+CM,_CWZ_LN,LINE 
+CM,_CWZ_AR,AREA 
+CM,_CWZ_VL,VOLU 
+ESEL,NONE   
+ESEL,A,REAL,,3  
+ESEL,R,ENAME,,169,177   
+NSLE
+KSLN,S  
+LSLK,S,1
+ASLL,S,1
+*CREATE,cwzplot,mac 
+~eui,'::apdl::noprint 1'
+~eui,'::apdl::nooutput 1'   
+/PNUM,TYPE,1
+/NUM,1  
+/PSYMB,ESYS,1   
+EPLOT   
+/PSYMB,ESYS,0   
+/NUM,0  
+/PNUM,TYPE,0
+/PNUM,REAL,0
+/mrep,cwzplot   
+~eui,'::apdl::nooutput 0'   
+~eui,'::apdl::noprint 0'
+*END
+cwzplot 
+*SET,_REALID,3  
+CMSEL,S,_CWZ_EL 
+CMDEL,_CWZ_EL   
+CMSEL,S,_CWZ_ND 
+CMDEL,_CWZ_ND   
+CMSEL,S,_CWZ_KP 
+CMDEL,_CWZ_KP   
+CMSEL,S,_CWZ_LN 
+CMDEL,_CWZ_LN   
+CMSEL,S,_CWZ_AR 
+CMDEL,_CWZ_AR   
+CMSEL,S,_CWZ_VL 
+CMDEL,_CWZ_VL   
+!*  
+!*  
+CM,_CWZ_EL,ELEM 
+CM,_CWZ_ND,NODE 
+CM,_CWZ_KP,KP   
+CM,_CWZ_LN,LINE 
+CM,_CWZ_AR,AREA 
+CM,_CWZ_VL,VOLU 
+ESEL,NONE   
+ESEL,A,REAL,,3  
+ESEL,R,ENAME,,169,177   
+NSLE
+KSLN,S  
+LSLK,S,1
+ASLL,S,1
+*CREATE,cwzplot,mac 
+~eui,'::apdl::noprint 1'
+~eui,'::apdl::nooutput 1'   
+/PNUM,TYPE,1
+/NUM,1  
+/PSYMB,ESYS,1   
+EPLOT   
+/PSYMB,ESYS,0   
+/NUM,0  
+/PNUM,TYPE,0
+/PNUM,REAL,0
+/mrep,cwzplot   
+~eui,'::apdl::nooutput 0'   
+~eui,'::apdl::noprint 0'
+*END
+cwzplot 
+*SET,_REALID,3  
+CMSEL,S,_CWZ_EL 
+CMDEL,_CWZ_EL   
+CMSEL,S,_CWZ_ND 
+CMDEL,_CWZ_ND   
+CMSEL,S,_CWZ_KP 
+CMDEL,_CWZ_KP   
+CMSEL,S,_CWZ_LN 
+CMDEL,_CWZ_LN   
+CMSEL,S,_CWZ_AR 
+CMDEL,_CWZ_AR   
+CMSEL,S,_CWZ_VL 
+CMDEL,_CWZ_VL   
+!*  
+!*  
+CM,_EL_SWCH,ELEM
+!Switch Contact & Target for real ID 3  
+ESEL,S,REAL,,3  
+ESEL,R,ENAM,,169,170
+CM,_TG_SWCH,ELEM
+ESEL,S,REAL,,3  
+ESEL,R,ENAM,,171,174
+CM,_CN_SWCH,ELEM
+EMODIF,ALL,TYPE,2   
+CMSEL,S,_TG_SWCH,ELEM   
+EMODIF,ALL,TYPE,3   
+CMDEL,_TG_SWCH  
+CMDEL,_CN_SWCH  
+CMSEL,S,_EL_SWCH,ELEM   
+CMDEL,_EL_SWCH  
+!*  
+!*  
+CM,_EL_SWCH,ELEM
+!Switch Contact & Target for real ID 3  
+ESEL,S,REAL,,3  
+ESEL,R,ENAM,,169,170
+CM,_TG_SWCH,ELEM
+ESEL,S,REAL,,3  
+ESEL,R,ENAM,,171,174
+CM,_CN_SWCH,ELEM
+EMODIF,ALL,TYPE,2   
+CMSEL,S,_TG_SWCH,ELEM   
+EMODIF,ALL,TYPE,3   
+CMDEL,_TG_SWCH  
+CMDEL,_CN_SWCH  
+CMSEL,S,_EL_SWCH,ELEM   
+CMDEL,_EL_SWCH  
+!*  
+*CREATE,cwzplot,mac 
+~eui,'::apdl::noprint 1'
+~eui,'::apdl::nooutput 1'   
+!*  
+CM,_CWZ_EL,ELEM 
+CM,_CWZ_ND,NODE 
+CM,_CWZ_KP,KP   
+CM,_CWZ_LN,LINE 
+CM,_CWZ_AR,AREA 
+CM,_CWZ_VL,VOLU 
+ESEL,NONE   
+ESEL,A,REAL,,3  
+ESEL,R,ENAME,,169,170   
+NSLE
+*GET,_z1,ELEM,,NUM,MAX  
+KSLN,S  
+LSLK,S,1
+ASLL,S,1
+/PNUM,REAL,1
+/NUM,1  
+/PSYMB,ESYS,1   
+EPLOT   
+CMSEL,S,_CWZ_EL 
+CMDEL,_CWZ_EL   
+CMSEL,S,_CWZ_ND 
+CMDEL,_CWZ_ND   
+CMSEL,S,_CWZ_KP 
+CMDEL,_CWZ_KP   
+CMSEL,S,_CWZ_LN 
+CMDEL,_CWZ_LN   
+CMSEL,S,_CWZ_AR 
+CMDEL,_CWZ_AR   
+CMSEL,S,_CWZ_VL 
+CMDEL,_CWZ_VL   
+!*  
+/PSYMB,ESYS,0   
+/NUM,0  
+/PNUM,TYPE,0
+/PNUM,REAL,0
+/mrep,cwzplot   
+~eui,'::apdl::nooutput 0'   
+~eui,'::apdl::noprint 0'
+*END
+cwzplot 
+*CREATE,cwzplot,mac 
+~eui,'::apdl::noprint 1'
+~eui,'::apdl::nooutput 1'   
+!*  
+CM,_CWZ_EL,ELEM 
+CM,_CWZ_ND,NODE 
+CM,_CWZ_KP,KP   
+CM,_CWZ_LN,LINE 
+CM,_CWZ_AR,AREA 
+CM,_CWZ_VL,VOLU 
+ESEL,NONE   
+ESEL,A,REAL,,4  
+ESEL,R,ENAME,,169,170   
+NSLE
+*GET,_z1,ELEM,,NUM,MAX  
+KSLN,S  
+LSLK,S,1
+ASLL,S,1
+/PNUM,REAL,1
+/NUM,1  
+/PSYMB,ESYS,1   
+EPLOT   
+CMSEL,S,_CWZ_EL 
+CMDEL,_CWZ_EL   
+CMSEL,S,_CWZ_ND 
+CMDEL,_CWZ_ND   
+CMSEL,S,_CWZ_KP 
+CMDEL,_CWZ_KP   
+CMSEL,S,_CWZ_LN 
+CMDEL,_CWZ_LN   
+CMSEL,S,_CWZ_AR 
+CMDEL,_CWZ_AR   
+CMSEL,S,_CWZ_VL 
+CMDEL,_CWZ_VL   
+!*  
+/PSYMB,ESYS,0   
+/NUM,0  
+/PNUM,TYPE,0
+/PNUM,REAL,0
+/mrep,cwzplot   
+~eui,'::apdl::nooutput 0'   
+~eui,'::apdl::noprint 0'
+*END
+cwzplot 
+CM,_CWZ_EL,ELEM 
+CM,_CWZ_ND,NODE 
+CM,_CWZ_KP,KP   
+CM,_CWZ_LN,LINE 
+CM,_CWZ_AR,AREA 
+CM,_CWZ_VL,VOLU 
+ESEL,NONE   
+ESEL,A,REAL,,4  
+ESEL,R,ENAME,,169,170   
+NSLE
+*GET,_z1,ELEM,,NUM,MAX  
+KSLN,S  
+LSLK,S,1
+ASLL,S,1
+*CREATE,cwzplot,mac 
+~eui,'::apdl::noprint 1'
+~eui,'::apdl::nooutput 1'   
+/PNUM,REAL,1
+/NUM,1  
+/PSYMB,ESYS,1   
+EPLOT   
+/PSYMB,ESYS,0   
+/NUM,0  
+/PNUM,TYPE,0
+/PNUM,REAL,0
+/mrep,cwzplot   
+~eui,'::apdl::nooutput 0'   
+~eui,'::apdl::noprint 0'
+*END
+cwzplot 
+*SET,_REALID,4  
+
+
+ 
+/REPLOT 
+CMSEL,S,_ELMCM  
+CMDELE,_ELMCM   
+!*  
+CMSEL,S,_CWZ_EL 
+CMDEL,_CWZ_EL   
+CMSEL,S,_CWZ_ND 
+CMDEL,_CWZ_ND   
+CMSEL,S,_CWZ_KP 
+CMDEL,_CWZ_KP   
+CMSEL,S,_CWZ_LN 
+CMDEL,_CWZ_LN   
+CMSEL,S,_CWZ_AR 
+CMDEL,_CWZ_AR   
+CMSEL,S,_CWZ_VL 
+CMDEL,_CWZ_VL   
+!*  
+/VIEW,1,,-1 
+/ANG,1  
+/REP,FAST   
+*CREATE,cwzplot,mac 
+~eui,'::apdl::noprint 1'
+~eui,'::apdl::nooutput 1'   
+!*  
+CM,_CWZ_EL,ELEM 
+CM,_CWZ_ND,NODE 
+CM,_CWZ_KP,KP   
+CM,_CWZ_LN,LINE 
+CM,_CWZ_AR,AREA 
+CM,_CWZ_VL,VOLU 
+ESEL,NONE   
+ESEL,A,REAL,,4  
+ESEL,R,ENAME,,169,170   
+NSLE
+*GET,_z1,ELEM,,NUM,MAX  
+KSLN,S  
+LSLK,S,1
+ASLL,S,1
+/PNUM,REAL,1
+/NUM,1  
+/PSYMB,ESYS,1   
+EPLOT   
+CMSEL,S,_CWZ_EL 
+CMDEL,_CWZ_EL   
+CMSEL,S,_CWZ_ND 
+CMDEL,_CWZ_ND   
+CMSEL,S,_CWZ_KP 
+CMDEL,_CWZ_KP   
+CMSEL,S,_CWZ_LN 
+CMDEL,_CWZ_LN   
+CMSEL,S,_CWZ_AR 
+CMDEL,_CWZ_AR   
+CMSEL,S,_CWZ_VL 
+CMDEL,_CWZ_VL   
+!*  
+/PSYMB,ESYS,0   
+/NUM,0  
+/PNUM,TYPE,0
+/PNUM,REAL,0
+/mrep,cwzplot   
+~eui,'::apdl::nooutput 0'   
+~eui,'::apdl::noprint 0'
+*END
+cwzplot 
+*CREATE,cwzplot,mac 
+~eui,'::apdl::noprint 1'
+~eui,'::apdl::nooutput 1'   
+!*  
+CM,_CWZ_EL,ELEM 
+CM,_CWZ_ND,NODE 
+CM,_CWZ_KP,KP   
+CM,_CWZ_LN,LINE 
+CM,_CWZ_AR,AREA 
+CM,_CWZ_VL,VOLU 
+ESEL,NONE   
+ESEL,A,REAL,,4  
+ESEL,R,ENAME,,169,177   
+NSLE
+KSLN,S  
+LSLK,S,1
+ASLL,S,1
+/PNUM,TYPE,1
+/NUM,1  
+/PSYMB,ESYS,1   
+EPLOT   
+CMSEL,S,_CWZ_EL 
+CMDEL,_CWZ_EL   
+CMSEL,S,_CWZ_ND 
+CMDEL,_CWZ_ND   
+CMSEL,S,_CWZ_KP 
+CMDEL,_CWZ_KP   
+CMSEL,S,_CWZ_LN 
+CMDEL,_CWZ_LN   
+CMSEL,S,_CWZ_AR 
+CMDEL,_CWZ_AR   
+CMSEL,S,_CWZ_VL 
+CMDEL,_CWZ_VL   
+!*  
+/PSYMB,ESYS,0   
+/NUM,0  
+/PNUM,TYPE,0
+/PNUM,REAL,0
+/mrep,cwzplot   
+~eui,'::apdl::nooutput 0'   
+~eui,'::apdl::noprint 0'
+*END
+cwzplot 
+
+Allsel,all
+
+
+
+allsel,all
+eplot
+finish
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!
+*if,AnalysisType,eq,0,then
+
+   /SOLU
+   ANTYPE,0 ! Perform a static analysis
+   OUTRES,ALL,ALL
+
+   NSUBST,50,50,1
+   Nsel,s,loc,z,-SnowTh
+   D,all,ux,0,,,,uy,uz  ! Defines DOF constraints, clamp the end 
+
+   ASEL,S,,,39  ! Defines DOF constraints, skate board
+   ASEL,A,,,78 
+   ASEL,A,,,38 
+   ASEL,A,,,77 
+   ASEL,A,,,37 
+   ASEL,A,,,76 
+   ASEL,A,,,35 
+   ASEL,A,,,74 
+   ASEL,A,,,34 
+   ASEL,A,,,73 
+   ASEL,A,,,33 
+   ASEL,A,,,72 
+   ASEL,A,,,32 
+   ASEL,A,,,71 
+   ASEL,A,,,31 
+   ASEL,A,,,70 
+   ASEL,A,,,30 
+   ASEL,A,,,69 
+   ASEL,A,,,29 
+   ASEL,A,,,68 
+   ASEL,A,,,28 
+   ASEL,A,,,67 
+   ASEL,A,,,27 
+   ASEL,A,,,66 
+   ASEL,A,,,26 
+   ASEL,A,,,65 
+   ASEL,A,,,25 
+   ASEL,A,,,64 
+   ASEL,A,,,24 
+   ASEL,A,,,63 
+   ASEL,A,,,23 
+   ASEL,A,,,62 
+   ASEL,A,,,22 
+   ASEL,A,,,61 
+   ASEL,A,,,21 
+   ASEL,A,,,60 
+   ASEL,A,,,36 
+   ASEL,A,,,75 
+   da,all,ux,0
+   da,all,uy,0 
+   da,all,rotx,0
+   da,all,roty,0
+   da,all,rotz,0
+
+   Allsel,all
+
+   Nsel,s,loc,x,0.13,0.20  
+   Nsel,r,loc,z,0.0001,0.025 
+   F,all,Fz,-3000 ! Define vertical load
+
+   nsel,s,loc,x,-0.18,-0.11
+   nsel,r,loc,z,0.0001,0.025 
+   F,all,Fz,-3000 ! Define vertical load
+
+   Allsel,all
+   SOLVE
+   Save
+   FINISH
+ 
+*Else
+
+   /SOL
+   nsel,s,loc,z,-SnowTh
+   d,all,ux,0,,,,uy,uz  ! Defines DOF constraints, clamp the end 
+
+   ASEL,S,,,39  ! Defines DOF constraints, skate board
+   ASEL,A,,,78 
+   ASEL,A,,,38 
+   ASEL,A,,,77 
+   ASEL,A,,,37 
+   ASEL,A,,,76 
+   ASEL,A,,,35 
+   ASEL,A,,,74 
+   ASEL,A,,,34 
+   ASEL,A,,,73 
+   ASEL,A,,,33 
+   ASEL,A,,,72 
+   ASEL,A,,,32 
+   ASEL,A,,,71 
+   ASEL,A,,,31 
+   ASEL,A,,,70 
+   ASEL,A,,,30 
+   ASEL,A,,,69 
+   ASEL,A,,,29 
+   ASEL,A,,,68 
+   ASEL,A,,,28 
+   ASEL,A,,,67 
+   ASEL,A,,,27 
+   ASEL,A,,,66 
+   ASEL,A,,,26 
+   ASEL,A,,,65 
+   ASEL,A,,,25 
+   ASEL,A,,,64 
+   ASEL,A,,,24 
+   ASEL,A,,,63 
+   ASEL,A,,,23 
+   ASEL,A,,,62 
+   ASEL,A,,,22 
+   ASEL,A,,,61 
+   ASEL,A,,,21 
+   ASEL,A,,,60 
+   ASEL,A,,,36 
+   ASEL,A,,,75 
+   da,all,ux,0
+   da,all,uy,0 
+   da,all,rotx,0
+   da,all,roty,0
+   da,all,rotz,0
+
+   Allsel,all
+
+
+   inT=3e-4
+   endT=.003
+   dt=endT/inT
+   ANTYPE,4
+   TRNOPT,FULL,,Damp
+   RESCONTROL,,NONE,None
+   Lumpm,0
+   TINTP,,0.25,0.5,0.5
+   KBC,1
+   Outers,all,all 
+   ct=0
+   *do,i,inT,endT,inT
+      Time,i
+      ct=ct+1
+      nsel,s,loc,x,0.13,0.20  
+      nsel,r,loc,z,0.0001,0.025 
+      F,all,Fz,ct*(-3000/dt) ! Define vertical load
+
+      nsel,s,loc,x,-0.18,-0.11
+      nsel,r,loc,z,0.0001,0.025 
+      F,all,Fz,ct*(-3000/dt) ! Define vertical load
+ 
+      Allsel  
+      solve
+  
+   *Enddo 
+ 
+    FINISH  
+*Endif 

@@ -1,0 +1,23 @@
+Allsel,all
+/post26
+NumExtractData=20
+SET, LAST                   !Read results
+*DIM, PresArray, ARRAY, NumExtractData, 1
+*DIM, DisArray, ARRAY,  NumExtractData, 1
+*Do,it,1,NumExtractData,1
+
+   ksel,s,kp,,it
+   Nslk,s
+  *GET, nodeCount      , NODE, 0        , num , Max
+  *GET,DisArray(it,1)  , NODE, nodeCount, U   , z
+  *GET, PresArray(it,1), NODE, nodeCount, CONT, PRES 
+  Allsel,all
+
+*enddo
+
+*CFOPEN, SResuls_APDL, txt 
+*VWRITE, DisArray(1,1),  PresArray(1,1)
+(F8.5, F12.3)
+*CFCLOS               !Close file
+
+
