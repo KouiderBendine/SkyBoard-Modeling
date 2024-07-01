@@ -247,15 +247,19 @@ for t = 2:num_load_steps
     Fz(22:24, t) = Fz(22:24, t-1) - 50;
     DeltZ(:, t) = PtZcoo(1:end)' + dz(1:end, t);
     
-    for it = 1:numel(DeltZ(:, t))
+   
+    %{
+     for it = 1:numel(DeltZ(:, t))
         if DeltZ(it, t) < 0
-            DeltZ(it, t) = DeltZ(it, t);
-        else
-            DeltZ(it, t) = 0;
+           DeltZ(it, t) = DeltZ(it, t);
+        elseif DeltZ(it, t) == 0 
+           DeltZ(it, t) = 0;
         end
-    end
-    
-    Pload(:, t) = (abs(DeltZ(:, t)))' * Ks./0.5;
+       
+end
+ %}
+    Pload(:, t) = (abs(dz(1:end, t)))' * Ks./5;
+    %Pload(:, t) = (abs(DeltZ(:, t)))' * Ks./0.5;
     
     for i = 1:numel(dz(:, t))
         if abs(dz(i, t)) >= PtZcoo(i) || abs(dz(i, t)) > PtZcoo(i)
@@ -344,27 +348,24 @@ fontsize(20,"points")
 xlabel('X Coordinate [m]');
 ylabel('Displacement [m]');
 
-xlim([-0.40, 0.40]);
+xlim([-0.60, 0.60]);
 legend('Ansys Static','Ansys Dynamic','Present Model')
 grid on;
 figure('Color', 'w')
 set(gca, 'FontSize', 20)
 set(gca, 'FontName', 'Times New Roman')
 fontsize(20,"points")
-plot(YL(1:2:end),AnsysCtr/150, 'k*--') 
+plot(YL(1:2:end),AnsysCtr/100, 'k*--')   % the ansys static results are devided by 100 bcs the thickness of the snow is 1/100 (due to the limited compututional capability of the hardware )
 hold on
-xlim([-0.40, 0.40]);
-plot(YL(1:2:end),AnsysCtrD/300, 'b*--') 
+%xlim([-0.60, 0.60]);
+plot(YL(1:2:end),AnsysCtrD/200, 'b*--')  % the ansys Dynamic results are devided by 100 bcs the thickness of the snow is 1/100 (due to the limited compututional capability of the hardware )
 hold on
 plot(YL(1:end-1), Pload(1:end-1, t),'LineWidth', 2,'color', 'k');
 legend('Ansys Static','Ansys Dynamic','Present Model')
 xlabel('X Coordinate [m]');
 ylabel('Contact Pressure [Pa]');
 grid on;
-disp([max(abs( dz(8:end-7, t-1))),max(abs(AnsysDis(8:14)))])
-disp([max(abs( Pload(1:end-1, t))),max(abs(AnsysCtr/200))])
-ErrorDisplacement =(0.0207-0.0184)/0.0207
-ErrorPressure =(max(abs(AnsysCtr/200))-2.8532)/max(abs(AnsysCtr/200))
+
 end
 
 %% Required Functions
