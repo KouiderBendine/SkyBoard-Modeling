@@ -358,7 +358,7 @@ fontsize(20,"points")
 plot(YL(1:2:end),AnsysCtr/100, 'k*--')   % the ansys static results are devided by 100 bcs the thickness of the snow is 1/100 (due to the limited compututional capability of the hardware )
 hold on
 %xlim([-0.60, 0.60]);
-plot(YL(1:2:end),AnsysCtrD/200, 'b*--')  % the ansys Dynamic results are devided by 100 bcs the thickness of the snow is 1/100 (due to the limited compututional capability of the hardware )
+plot(YL(1:2:end),AnsysCtrD/200, 'b*--')  % the ansys Dynamic results are devided by 200 bcs the thickness of the snow is 1/200 (due to the limited compututional capability of the hardware )
 hold on
 plot(YL(1:end-1), Pload(1:end-1, t),'LineWidth', 2,'color', 'k');
 legend('Ansys Static','Ansys Dynamic','Present Model')
